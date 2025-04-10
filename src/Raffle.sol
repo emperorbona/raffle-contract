@@ -15,6 +15,13 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBa
 
     error Raffle_NotEnoughEthSent();
     error Raffle_TransferFailed();
+    error Raffle__NotOpen();
+
+    /* Type Declarations */ 
+    enum RaffleState {
+        OPEN,
+        CALCULATING
+    }
     uint16 private constant REQUEST_CONFIRMATION = 2;
     uint32 private constant NUM_WORDS = 1;
 
@@ -28,8 +35,10 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBa
     uint64 private immutable i_subscriptionId;
     uint32 private immutable i_callbackGasLimit;
     address private s_recentWinner;
+    RaffleState private s_raffleState;
     
     event EnteredRaffle(address indexed player);
+    event PickedWinner(address indexed winner);
     constructor(
         uint256 entranceFee, 
         uint256 interval, 
@@ -46,18 +55,24 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBa
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
+        s_raffleState = RaffleState.OPEN;
     }
     function enterRaffle() external payable{
         if(msg.value < i_entranceFee){
             revert Raffle_NotEnoughEthSent();
         }   
+        if(s_raffleState != RaffleState.OPEN){
+            revert Raffle__NotOpen();
+        }
         s_players.push(payable(msg.sender));
         emit EnteredRaffle(msg.sender);
+
     }
     function pickWinner() external {
         if(block.timestamp < (i_interval + s_lastTimeStamp)){
             revert();
         }
+        s_raffleState = RaffleState.CALCULATING;
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
@@ -71,6 +86,12 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBa
         uint256 indexOfWinner = randomWords[0] % s_players.length;
         address payable winner = s_players[indexOfWinner];
         s_recentWinner = winner;
+        s_raffleState = RaffleState.OPEN;
+         
+        s_players = new address payable[](0);
+        s_lastTimeStamp = block.timestamp;
+         emit PickedWinner(s_recentWinner);
+
         (bool callSuccess,) = s_recentWinner.call{value: address(this).balance}("");
         if(!callSuccess){
             revert Raffle_TransferFailed();
