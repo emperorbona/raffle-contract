@@ -16,6 +16,11 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBa
     error Raffle_NotEnoughEthSent();
     error Raffle_TransferFailed();
     error Raffle__NotOpen();
+    error Raffle__UpkeepNotNeeded(
+        uint256 currentBalance,
+        uint256 numPlayers,
+        uint256 raffleState
+    );
 
     /* Type Declarations */ 
     enum RaffleState {
@@ -68,12 +73,38 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBa
         emit EnteredRaffle(msg.sender);
 
     }
-    function pickWinner() external {
-        if(block.timestamp < (i_interval + s_lastTimeStamp)){
-            revert();
+    /**
+     * @dev This is a function that the chainlink Automation Nodes call to 
+     * see if it's time to perform an upkeep.
+     * The following should be true for this to run:
+     * 1. The time intervals should have passed between raffle runs.
+     * 2. The raffle is in open State.
+     * 3. The contract has ETH(aka players);
+     * 4. (Implicit) The subscription is funded with LINK
+     */
+    function checkUpkeep(
+        bytes memory /*checkData*/) 
+        public view returns(bool upkeepNeeded, bytes memory /*performData*/
+    ){
+        bool timeHasPassed = block.timestamp >= (i_interval + s_lastTimeStamp);
+        bool isOpen = RaffleState.OPEN == s_raffleState;
+        bool hasBalance = address(this).balance > 0;
+        bool hasPlayers = s_players.length > 0;
+        upkeepNeeded = (timeHasPassed && isOpen && hasBalance && hasPlayers);
+        return (upkeepNeeded, "0x0");
+    }
+    function performUpKeep(bytes calldata /*performData*/) external {
+        (bool upkeepNeeded,) = checkUpkeep("");
+        if(!upkeepNeeded){
+            revert Raffle__UpkeepNotNeeded(
+                address(this).balance,
+                s_players.length,
+                uint256(s_raffleState)
+            );
         }
+        // Check to see if enough time has passed.
         s_raffleState = RaffleState.CALCULATING;
-        uint256 requestId = i_vrfCoordinator.requestRandomWords(
+        /*uint256 requestId =*/ i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
             REQUEST_CONFIRMATION,
@@ -82,7 +113,7 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBa
         );
     }
 
-   function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
+   function fulfillRandomWords(uint256 /*requestId*/, uint256[] memory randomWords) internal override {
         uint256 indexOfWinner = randomWords[0] % s_players.length;
         address payable winner = s_players[indexOfWinner];
         s_recentWinner = winner;
