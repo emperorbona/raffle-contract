@@ -86,6 +86,7 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBa
         bytes memory /*checkData*/) 
         public view returns(bool upkeepNeeded, bytes memory /*performData*/
     ){
+        // Check to see if enough time has passed.
         bool timeHasPassed = block.timestamp >= (i_interval + s_lastTimeStamp);
         bool isOpen = RaffleState.OPEN == s_raffleState;
         bool hasBalance = address(this).balance > 0;
@@ -102,7 +103,7 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBa
                 uint256(s_raffleState)
             );
         }
-        // Check to see if enough time has passed.
+        
         s_raffleState = RaffleState.CALCULATING;
         /*uint256 requestId =*/ i_vrfCoordinator.requestRandomWords(
             i_gasLane,
