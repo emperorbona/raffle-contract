@@ -8,12 +8,14 @@ contract DeployRaffle is Script{
 
     function run() external returns(Raffle){
         HelperConfig helperConfig = new HelperConfig();
-        ( uint256 entranceFee, 
+        ( 
+        uint256 entranceFee, 
         uint256 interval, 
         address vrfCoordinator, 
         bytes32 gasLane,
         uint64 subscriptionId, 
-        uint32 callbackGasLimit)= helperConfig.activeNetworkConfig;
+        uint32 callbackGasLimit) = helperConfig.activeNetworkConfig();
+
         Raffle raffle ;
         vm.startBroadcast();
         raffle = new Raffle(
@@ -24,7 +26,7 @@ contract DeployRaffle is Script{
             subscriptionId, 
             callbackGasLimit
         );
-        vm.stopBroadCast();
+        vm.stopBroadcast();
         return raffle;
     }
 }
