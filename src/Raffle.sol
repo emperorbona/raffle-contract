@@ -139,4 +139,10 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBa
     function getPlayers(uint256 index) external view returns(address){
         return s_players[index];
     }
+    function getRaffleState() external view returns(RaffleState){
+        return s_raffleState;
+    }
+    function getNumWords() external pure returns(uint256){
+        return NUM_WORDS;
+    }
  }
