@@ -55,4 +55,14 @@ contract RaffleTest is Test {
         raffle.enterRaffle{value: SEND_VALUE}();
 
     }
+    function testCantEnterRaffleWhenRaffleIsCalculating() external {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: SEND_VALUE}();
+        vm.warp(block.timestamp + 1 + interval);
+        
+        raffle.performUpKeep("");
+        
+        vm.expectRevert(Raffle.Raffle__NotOpen.selector);
+        raffle.enterRaffle{value: SEND_VALUE}();
+    }
 }
