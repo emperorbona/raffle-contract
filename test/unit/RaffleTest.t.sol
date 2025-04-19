@@ -14,6 +14,7 @@ contract RaffleTest is Test {
         bytes32 gasLane;
         uint64 subscriptionId; 
         uint32 callbackGasLimit;
+        address link;
     event EnteredRaffle(address indexed player);
     event PickedWinner(address indexed winner);
     address public PLAYER = makeAddr("Player");
@@ -28,7 +29,8 @@ contract RaffleTest is Test {
             vrfCoordinator, 
             gasLane,
             subscriptionId, 
-            callbackGasLimit) = helperConfig.activeNetworkConfig();
+            callbackGasLimit,
+            link) = helperConfig.activeNetworkConfig();
         vm.deal(PLAYER, STARTING_BALANCE);
     }
 
