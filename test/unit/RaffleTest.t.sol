@@ -67,4 +67,25 @@ contract RaffleTest is Test {
         vm.expectRevert(Raffle.Raffle__NotOpen.selector);
         raffle.enterRaffle{value: SEND_VALUE}();
     }
+    function testCheckUpkeepReturnsFalseIfItHasNoBalance() external{
+        vm.prank(PLAYER);
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        (bool upKeepNeeded,) = raffle.checkUpkeep("");
+
+        assert(!upKeepNeeded);
+    }
+
+    function testCheckUpkeepReturnsFalseWhenRaffleIsCaluclating() external{
+        vm.prank(PLAYER);
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        raffle.enterRaffle{value: SEND_VALUE}();
+        raffle.performUpKeep("");
+
+        (bool upKeepNeeded,) = raffle.checkUpkeep("");
+
+        assert(!upKeepNeeded);
+    }
 }
