@@ -193,9 +193,5 @@ contract RaffleTest is Test {
         console.log(raffle.getRecentWinner().balance);
         console.log(prize + STARTING_BALANCE - SEND_VALUE);
         assert(raffle.getRecentWinner().balance == STARTING_BALANCE + prize - SEND_VALUE);
-        
-
-
-
     }
 }
